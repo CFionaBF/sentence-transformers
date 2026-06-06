@@ -97,9 +97,12 @@ def import_module_class(
     modeling file from the model directory, then falls back to :func:`import_from_string`
     if dynamic loading is not applicable or fails.
 
-    Dynamic loading is attempted when ``trust_remote_code`` is set, or when
-    ``model_name_or_path`` resolves to a local directory (i.e. the user already has the
-    file on disk and is implicitly trusted).
+    Dynamic loading (which executes Python shipped inside the model repository) is
+    attempted only when ``trust_remote_code`` is set. A local on-disk path is NOT
+    treated as implicitly trusted: model directories are routinely attacker-influenced
+    (cloned/downloaded Hub repos, unpacked tarballs, mounted shares), so requiring the
+    explicit opt-in keeps local and Hub paths gated identically — matching the
+    ``transformers`` contract.
 
     Args:
         class_ref: Dotted class path. Either a fully-qualified ``sentence_transformers.*``
@@ -121,7 +124,7 @@ def import_module_class(
     if class_ref.startswith("sentence_transformers."):
         return import_from_string(class_ref)
 
-    if model_name_or_path is not None and (trust_remote_code or os.path.exists(model_name_or_path)):
+    if model_name_or_path is not None and trust_remote_code:
         from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
         try:
